@@ -3,8 +3,6 @@ package guiTest;
 import gnu.io.CommPort;
 import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
-import gnu.io.SerialPortEvent;
-import gnu.io.SerialPortEventListener;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,21 +29,19 @@ public class FireFly {
 	        }
 	        else
 	        {
-	            CommPort commPort = portIdentifier.open(this.getClass().getName(),2000);
+	            int timeout = 2000;
+	        	CommPort commPort = portIdentifier.open(this.getClass().getName(),timeout);
 	            
 	            if ( commPort instanceof SerialPort )
 	            {
 	                SerialPort serialPort = (SerialPort) commPort;
-	                serialPort.setSerialPortParams(19200,SerialPort.DATABITS_8,SerialPort.STOPBITS_1,SerialPort.PARITY_NONE);
+	                serialPort.setSerialPortParams(115200,SerialPort.DATABITS_8,SerialPort.STOPBITS_1,SerialPort.PARITY_NONE);
 	                
 	                in = serialPort.getInputStream();
 	                out = serialPort.getOutputStream();
 	                               
-	                (new Thread(new SerialWriter(out))).start();
-	                
-	                serialPort.addEventListener(new SerialReader(in));
-	                serialPort.notifyOnDataAvailable(true);
-	                
+	                (new Thread(new SerialReader(in))).start();
+	                (new Thread(new SerialWriter(out))).start();	                
 
 	            }
 	            else
@@ -64,10 +60,9 @@ public class FireFly {
 	    }
 	    
 	    /**
-	     * Handles the input coming from the serial port. A new line character
-	     * is treated as the end of a block. 
+	     * Handles the input coming from the serial port.
 	     */
-	    public static class SerialReader implements SerialPortEventListener 
+	    public static class SerialReader implements Runnable 
 	    {
 	        private InputStream in;
 	        private byte[] buffer = new byte[25];
@@ -77,18 +72,14 @@ public class FireFly {
 	            this.in = in;
 	        }
 	        
-	        public void serialEvent(SerialPortEvent arg0) {
+	        public void run() {
 	            int data;
+	            int len = 0;
 	            
 	            try
 	            {
-	                int len = 0;
 	                while ( ( data = in.read()) > -1 )
 	                {
-	                	
-	                    if ( data == '\n' ) {
-	                        break;
-	                    }
 	                    buffer[len++] = (byte) data;
 	                }
 	                System.out.print(new String(buffer,0,len));
@@ -140,8 +131,7 @@ public class FireFly {
 		
 		try
        {
-           (new FireFly()).connect("COM6");
-
+           (new FireFly()).connect("COM40"); // Port number connected to FireFly module
        }
        catch ( Exception e )
        {
